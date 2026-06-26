@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/*
+  AKR Nexus design system — premium "navy + gold" luxury.
+  Tailwind v4 CSS-first theming via @theme.
+*/
+
+@theme {
+  /* Brand — deep navy (trust / authority) */
+  --color-navy-50: #f3f6fb;
+  --color-navy-100: #e3ebf5;
+  --color-navy-200: #c2d2e8;
+  --color-navy-300: #94aed3;
+  --color-navy-400: #5e80b4;
+  --color-navy-500: #3a5c93;
+  --color-navy-600: #2a4575;
+  --color-navy-700: #21375e;
+  --color-navy-800: #16263f;
+  --color-navy-900: #0e1b2e;
+  --color-navy-950: #0a1322;
+
+  /* Brand — gold (aspiration / premium CTA) */
+  --color-gold-50: #fbf8ef;
+  --color-gold-100: #f5edd3;
+  --color-gold-200: #ead9a4;
+  --color-gold-300: #dec06d;
+  --color-gold-400: #d4ac4a;
+  --color-gold-500: #c5a047;
+  --color-gold-600: #a87f30;
+  --color-gold-700: #865f28;
+  --color-gold-800: #6f4d27;
+  --color-gold-900: #5f4124;
+
+  /* Semantic aliases */
+  --color-brand: var(--color-navy-900);
+  --color-brand-foreground: #ffffff;
+  --color-accent: var(--color-gold-500);
+  --color-accent-foreground: var(--color-navy-950);
+
+  --color-background: #ffffff;
+  --color-foreground: #0e1b2e;
+  --color-muted: #f5f6f8;
+  --color-muted-foreground: #5b6573;
+  --color-border: #e6e8ec;
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+
+  /* Radius & shadows */
+  --radius: 0.625rem;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0e1b2e;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Utility: section container */
+.container-px {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+/* Prose tweaks for blog markdown */
+.prose-akr :where(h2) {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-navy-900);
+}
+.prose-akr :where(h3) {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-navy-800);
+}
+.prose-akr :where(p) { margin: 0.85rem 0; line-height: 1.8; }
+.prose-akr :where(ul) { list-style: disc; padding-left: 1.5rem; margin: 0.85rem 0; }
+.prose-akr :where(ol) { list-style: decimal; padding-left: 1.5rem; margin: 0.85rem 0; }
+.prose-akr :where(a) { color: var(--color-gold-700); text-decoration: underline; }
+.prose-akr :where(img) { border-radius: var(--radius); margin: 1.25rem 0; }
+.prose-akr :where(blockquote) {
+  border-left: 3px solid var(--color-gold-400);
+  padding-left: 1rem;
+  font-style: italic;
+  color: var(--color-muted-foreground);
+}
