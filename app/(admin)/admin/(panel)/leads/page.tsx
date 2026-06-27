@@ -11,6 +11,7 @@ export default async function LeadsPage({
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : null;
   const enquiry = typeof sp.enquiry === "string" ? sp.enquiry : null;
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
   const supabase = await createClient();
   let query = supabase
@@ -19,8 +20,18 @@ export default async function LeadsPage({
     .order("created_at", { ascending: false });
   if (status) query = query.eq("status", status as LeadStatusValue);
   if (enquiry) query = query.eq("enquiry_type", enquiry as EnquiryTypeValue);
+  if (q) {
+    const safe = q.replace(/[%,()]/g, " ");
+    query = query.or(
+      `name.ilike.%${safe}%,mobile.ilike.%${safe}%,email.ilike.%${safe}%,city.ilike.%${safe}%`
+    );
+  }
   const { data } = await query;
   const leads = (data ?? []) as Lead[];
+
+  const exportHref = `/admin/leads/export${
+    status ? `?status=${status}` : enquiry ? `?enquiry=${enquiry}` : ""
+  }`;
 
   return (
     <div className="space-y-6">
@@ -30,6 +41,28 @@ export default async function LeadsPage({
           <p className="text-sm text-muted-foreground">
             {leads.length} lead{leads.length === 1 ? "" : "s"}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <form method="get" className="flex items-center gap-2">
+            {status && <input type="hidden" name="status" value={status} />}
+            {enquiry && <input type="hidden" name="enquiry" value={enquiry} />}
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Search name, mobile, email…"
+              className="w-56 rounded-md border border-border px-3 py-2 text-sm focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
+            />
+            <button className="rounded-md bg-navy-900 px-3 py-2 text-sm text-white hover:bg-navy-800">
+              Search
+            </button>
+          </form>
+          <a
+            href={exportHref}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-navy-800 hover:bg-muted"
+          >
+            Export CSV
+          </a>
         </div>
       </div>
 

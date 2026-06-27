@@ -25,7 +25,9 @@ export type EnquiryTypeValue =
   | "investor"
   | "partner"
   | "nri"
-  | "dham";
+  | "dham"
+  | "property"
+  | "callback";
 export type VentureStatus = "coming_soon" | "upcoming" | "ongoing" | "completed";
 export type PartnerTypeValue = "developer" | "bank" | "legal" | "other";
 
@@ -227,6 +229,80 @@ export type AuditLog = {
   created_at: string;
 };
 
+export type ListingType = "sale" | "rent";
+
+export type Listing = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  listing_type: ListingType;
+  property_type: string;
+  price: number | null;
+  price_label: string | null;
+  area_value: number | null;
+  area_unit: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  location: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  amenities: string[];
+  cover_image: string | null;
+  video_url: string | null;
+  floor_plans: string[];
+  brochure_url: string | null;
+  is_featured: boolean;
+  sort_order: number;
+  status: PublishStatus;
+  seo_title: string | null;
+  seo_description: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ListingImage = {
+  id: string;
+  listing_id: string;
+  image_url: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  role: string | null;
+  photo_url: string | null;
+  bio: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+  sort_order: number;
+  status: PublishStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HeroSection = {
+  id: string;
+  page_key: string;
+  heading: string | null;
+  subtitle: string | null;
+  eyebrow: string | null;
+  cta_primary_label: string | null;
+  cta_primary_href: string | null;
+  cta_secondary_label: string | null;
+  cta_secondary_href: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  updated_at: string;
+};
+
 type TableDef<R extends Record<string, unknown>> = {
   Row: R;
   Insert: Partial<R>;
@@ -253,6 +329,10 @@ export type Database = {
       media_assets: TableDef<MediaAsset>;
       newsletter_subscribers: TableDef<NewsletterSubscriber>;
       audit_log: TableDef<AuditLog>;
+      listings: TableDef<Listing>;
+      listing_images: TableDef<ListingImage>;
+      team_members: TableDef<TeamMember>;
+      hero_sections: TableDef<HeroSection>;
     };
     Views: Record<string, never>;
     Functions: {

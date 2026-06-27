@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { PageHero } from "@/components/site/page-hero";
 import { CtaBand } from "@/components/site/cta-band";
 import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { getTeam } from "@/lib/data";
 import { site, subBrand } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -22,7 +24,8 @@ const values = [
   { name: "Community & Dignity", text: "Every home and project should raise the dignity and quality of life of the people we serve." },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const team = await getTeam();
   return (
     <>
       <BreadcrumbJsonLd
@@ -101,6 +104,28 @@ export default function AboutPage() {
           </p>
         </Container>
       </section>
+
+      {team.length > 0 && (
+        <section className="bg-muted py-16">
+          <Container>
+            <SectionHeading align="center" eyebrow="Our People" title="Leadership & Team" />
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {team.map((m) => (
+                <div key={m.id} className="rounded-xl bg-white p-6 text-center shadow-sm">
+                  <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full bg-navy-100">
+                    {m.photo_url && (
+                      <Image src={m.photo_url} alt={m.name} fill className="object-cover" sizes="96px" />
+                    )}
+                  </div>
+                  <h3 className="mt-4 font-serif text-lg text-navy-900">{m.name}</h3>
+                  {m.role && <p className="text-sm text-gold-700">{m.role}</p>}
+                  {m.bio && <p className="mt-2 text-sm text-muted-foreground">{m.bio}</p>}
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       <CtaBand />
     </>

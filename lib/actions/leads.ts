@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { leadSchema, subscribeSchema } from "@/lib/validations";
 import { sendLeadNotification } from "@/lib/email";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -63,22 +63,21 @@ export async function submitLead(
   }
 
   try {
-    const supabase = createAdminClient();
-    const { data: inserted, error } = await supabase
-      .from("leads")
-      .insert({
-        name: data.name,
-        mobile: data.mobile,
-        email: data.email || null,
-        city: data.city || null,
-        enquiry_type: data.enquiry_type,
-        interest_type: data.interest_type || null,
-        message: data.message || null,
-        lead_source: source,
-        status: "new",
-      })
-      .select()
-      .single();
+    // Uses the anon server client; RLS policy `leads_public_insert` permits
+    // public inserts, so this works without the service-role key.
+    const supabase = await createClient();
+    const insertPayload = {
+      name: data.name,
+      mobile: data.mobile,
+      email: data.email || null,
+      city: data.city || null,
+      enquiry_type: data.enquiry_type,
+      interest_type: data.interest_type || null,
+      message: data.message || null,
+      lead_source: source,
+      status: "new" as const,
+    };
+    const { error } = await supabase.from("leads").insert(insertPayload);
 
     if (error) {
       console.error("[leads] insert error:", error);
@@ -88,7 +87,11 @@ export async function submitLead(
       };
     }
 
-    await sendLeadNotification(inserted as Lead);
+    // Build the notification from validated data (anon cannot read the row back).
+    await sendLeadNotification({
+      ...insertPayload,
+      created_at: new Date().toISOString(),
+    } as Lead);
 
     return {
       ok: true,
@@ -120,7 +123,7 @@ export async function subscribe(
   }
 
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error } = await supabase.from("newsletter_subscribers").insert({
       email: parsed.data.email,
       name: parsed.data.name || null,

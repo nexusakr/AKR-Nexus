@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
-import { getPublishedPosts, getPublishedVentures } from "@/lib/data";
+import {
+  getPublishedPosts,
+  getPublishedVentures,
+  getPublishedListings,
+} from "@/lib/data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = site.url.replace(/\/$/, "");
@@ -8,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/about",
+    "/listings",
     "/services",
     "/ventures",
     "/customer-programs",
@@ -25,9 +30,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : 0.7,
   }));
 
-  const [posts, ventures] = await Promise.all([
+  const [posts, ventures, listings] = await Promise.all([
     getPublishedPosts(),
     getPublishedVentures(),
+    getPublishedListings(),
   ]);
 
   const postRoutes = posts.map((p) => ({
@@ -44,5 +50,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...postRoutes, ...ventureRoutes];
+  const listingRoutes = listings.map((l) => ({
+    url: `${base}/listings/${l.slug}`,
+    lastModified: l.updated_at ? new Date(l.updated_at) : new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...postRoutes, ...ventureRoutes, ...listingRoutes];
 }

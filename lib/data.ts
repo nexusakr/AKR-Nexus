@@ -5,8 +5,13 @@ import type {
   BlogPost,
   CustomerProgram,
   Division,
+  HeroSection,
+  Listing,
+  ListingImage,
+  ListingType,
   Partner,
   SiteSettings,
+  TeamMember,
   Testimonial,
   Venture,
   VentureImage,
@@ -154,3 +159,81 @@ export const getPublishedTestimonials = cache(async (): Promise<Testimonial[]> =
     .order("sort_order", { ascending: true });
   return data ?? [];
 });
+
+export const getTeam = cache(async (): Promise<TeamMember[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("team_members")
+    .select("*")
+    .eq("status", "published")
+    .order("sort_order", { ascending: true });
+  return data ?? [];
+});
+
+export const getHero = cache(
+  async (pageKey = "home"): Promise<HeroSection | null> => {
+    if (!isSupabaseConfigured()) return null;
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("hero_sections")
+      .select("*")
+      .eq("page_key", pageKey)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return data ?? null;
+  }
+);
+
+export type ListingFilters = {
+  listingType?: string;
+  propertyType?: string;
+  featured?: boolean;
+};
+
+export const getPublishedListings = cache(
+  async (filters: ListingFilters = {}): Promise<Listing[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const supabase = await createClient();
+    let query = supabase
+      .from("listings")
+      .select("*")
+      .eq("status", "published")
+      .order("is_featured", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (filters.listingType)
+      query = query.eq("listing_type", filters.listingType as ListingType);
+    if (filters.propertyType)
+      query = query.eq("property_type", filters.propertyType);
+    if (filters.featured) query = query.eq("is_featured", true);
+    const { data } = await query;
+    return data ?? [];
+  }
+);
+
+export const getFeaturedListings = cache(async (): Promise<Listing[]> => {
+  return getPublishedListings({ featured: true });
+});
+
+export const getListingBySlug = cache(
+  async (slug: string): Promise<(Listing & { images: ListingImage[] }) | null> => {
+    if (!isSupabaseConfigured()) return null;
+    const supabase = await createClient();
+    const { data: listing } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle();
+    if (!listing) return null;
+    const { data: images } = await supabase
+      .from("listing_images")
+      .select("*")
+      .eq("listing_id", listing.id)
+      .order("sort_order", { ascending: true });
+    return { ...listing, images: images ?? [] };
+  }
+);

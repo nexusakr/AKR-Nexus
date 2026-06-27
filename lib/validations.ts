@@ -7,6 +7,8 @@ const enquiryValues = [
   "partner",
   "nri",
   "dham",
+  "property",
+  "callback",
 ] as const;
 
 /** Schema for all public lead/enquiry submissions. */

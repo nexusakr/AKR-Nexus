@@ -43,11 +43,49 @@ export const social = {
 export const mainNav: { label: string; href: string }[] = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about" },
+  { label: "Properties", href: "/listings" },
   { label: "Services", href: "/services" },
   { label: "Ventures", href: "/ventures" },
   { label: "Blog", href: "/blog" },
   { label: "Contact Us", href: "/contact" },
 ];
+
+/** Property listing constants for filters and admin forms. */
+export const listingTypes = [
+  { value: "sale", label: "For Sale" },
+  { value: "rent", label: "For Rent" },
+] as const;
+
+export const propertyTypes = [
+  { value: "plot", label: "Plot / Land" },
+  { value: "apartment", label: "Apartment" },
+  { value: "villa", label: "Villa" },
+  { value: "house", label: "Independent House" },
+  { value: "commercial", label: "Commercial" },
+  { value: "farmland", label: "Farmland" },
+] as const;
+
+export const areaUnits = [
+  { value: "sqft", label: "sq ft" },
+  { value: "acre", label: "acre" },
+  { value: "katha", label: "katha" },
+  { value: "bigha", label: "bigha" },
+] as const;
+
+export const commonAmenities = [
+  "Gated Community",
+  "24x7 Security",
+  "Power Backup",
+  "Car Parking",
+  "Water Supply",
+  "Park / Garden",
+  "Wide Roads",
+  "Corner Plot",
+  "Clear Title",
+  "Near Temple",
+  "Near Highway",
+  "Boundary Wall",
+] as const;
 
 /** Secondary / segment pages surfaced in mega-menus and the footer. */
 export const segmentNav: { label: string; href: string }[] = [
@@ -65,6 +103,8 @@ export const enquiryTypes = [
   { value: "partner", label: "Partner Enquiry" },
   { value: "nri", label: "NRI Enquiry" },
   { value: "dham", label: "Dham Developers Enquiry" },
+  { value: "property", label: "Property Enquiry" },
+  { value: "callback", label: "Callback Request" },
 ] as const;
 
 export type EnquiryType = (typeof enquiryTypes)[number]["value"];

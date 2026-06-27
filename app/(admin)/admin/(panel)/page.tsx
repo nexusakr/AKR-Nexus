@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Users, FileText, Building2, Handshake } from "lucide-react";
+import { Users, FileText, Building2, Handshake, Home } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { leadStatuses } from "@/lib/site";
 import { formatDate } from "@/lib/utils";
-import type { Lead } from "@/types/database";
+import type { Lead, Listing } from "@/types/database";
 
 async function count(table: string, filter?: { col: string; val: string }) {
   const supabase = await createClient();
@@ -16,19 +16,27 @@ async function count(table: string, filter?: { col: string; val: string }) {
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const [leadsTotal, newLeads, posts, ventures, partners] = await Promise.all([
-    count("leads"),
-    count("leads", { col: "status", val: "new" }),
-    count("blog_posts"),
-    count("ventures"),
-    count("partners"),
-  ]);
+  const [leadsTotal, newLeads, listingsCount, posts, ventures, partners] =
+    await Promise.all([
+      count("leads"),
+      count("leads", { col: "status", val: "new" }),
+      count("listings"),
+      count("blog_posts"),
+      count("ventures"),
+      count("partners"),
+    ]);
 
   const { data: recent } = await supabase
     .from("leads")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(8);
+
+  const { data: recentListings } = await supabase
+    .from("listings")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
   const { data: allLeads } = await supabase.from("leads").select("status");
   const statusList = (allLeads ?? []) as { status: string }[];
@@ -40,6 +48,7 @@ export default async function AdminDashboard() {
   const cards = [
     { label: "Total Leads", value: leadsTotal, icon: Users, href: "/admin/leads" },
     { label: "New Leads", value: newLeads, icon: Users, href: "/admin/leads?status=new" },
+    { label: "Properties", value: listingsCount, icon: Home, href: "/admin/listings" },
     { label: "Blog Posts", value: posts, icon: FileText, href: "/admin/blog" },
     { label: "Ventures", value: ventures, icon: Building2, href: "/admin/ventures" },
     { label: "Partners", value: partners, icon: Handshake, href: "/admin/partners" },
@@ -55,7 +64,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {cards.map((c) => (
           <Link
             key={c.label}
@@ -112,6 +121,42 @@ export default async function AdminDashboard() {
           ) : (
             <p className="px-5 py-8 text-center text-sm text-muted-foreground">
               No leads yet. Submissions from the website will appear here.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Recent listings */}
+      <div className="rounded-xl border border-border bg-white">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="font-serif text-lg text-navy-900">Recent Properties</h2>
+          <Link href="/admin/listings" className="text-sm text-gold-700 hover:underline">
+            View all
+          </Link>
+        </div>
+        <div className="divide-y divide-border">
+          {(recentListings as Listing[] | null)?.length ? (
+            (recentListings as Listing[]).map((l) => (
+              <Link
+                key={l.id}
+                href={`/admin/listings/${l.id}`}
+                className="flex items-center justify-between px-5 py-3 hover:bg-muted"
+              >
+                <div>
+                  <p className="font-medium text-navy-900">{l.title}</p>
+                  <p className="text-xs capitalize text-muted-foreground">
+                    {l.listing_type} · {l.property_type}
+                    {l.location ? ` · ${l.location}` : ""}
+                  </p>
+                </div>
+                <span className="rounded-full bg-navy-100 px-2.5 py-0.5 text-xs font-medium text-navy-700">
+                  {l.status}
+                </span>
+              </Link>
+            ))
+          ) : (
+            <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+              No properties yet. Add one under Properties.
             </p>
           )}
         </div>

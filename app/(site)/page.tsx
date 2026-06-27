@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { CtaBand } from "@/components/site/cta-band";
 import { LeadForm } from "@/components/site/lead-form";
+import { ListingCard } from "@/components/site/listing-card";
 import {
   services as staticServices,
   customerPrograms as staticPrograms,
@@ -23,6 +24,8 @@ import {
 } from "@/lib/site";
 import {
   getFeaturedVentures,
+  getFeaturedListings,
+  getHero,
   getPrograms,
   getPublishedPartners,
   getPublishedPosts,
@@ -40,15 +43,29 @@ const whyChooseUs = [
 ];
 
 export default async function HomePage() {
-  const [featured, programs, partners, posts, testimonials] = await Promise.all([
-    getFeaturedVentures(),
-    getPrograms(),
-    getPublishedPartners(),
-    getPublishedPosts(3),
-    getPublishedTestimonials(),
-  ]);
+  const [featured, featuredListings, hero, programs, partners, posts, testimonials] =
+    await Promise.all([
+      getFeaturedVentures(),
+      getFeaturedListings(),
+      getHero("home"),
+      getPrograms(),
+      getPublishedPartners(),
+      getPublishedPosts(3),
+      getPublishedTestimonials(),
+    ]);
 
   const programList = programs.length ? programs : staticPrograms;
+
+  // Hero content is CMS-editable, with the original copy as fallback.
+  const heroEyebrow = hero?.eyebrow || `${site.name} · Deoghar`;
+  const heroHeading = hero?.heading || "Your Trusted Property Partner in Deoghar";
+  const heroSubtitle =
+    hero?.subtitle ||
+    "From your first site visit to final possession — guided with transparency, local expertise and end-to-end accountability.";
+  const heroCta1Label = hero?.cta_primary_label || "Schedule Consultation";
+  const heroCta1Href = hero?.cta_primary_href || "/contact";
+  const heroCta2Label = hero?.cta_secondary_label || "Explore Ventures";
+  const heroCta2Href = hero?.cta_secondary_href || "/ventures";
 
   return (
     <>
@@ -65,21 +82,18 @@ export default async function HomePage() {
         <Container className="relative grid gap-10 py-20 lg:grid-cols-2 lg:py-28">
           <div>
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-gold-300">
-              {site.name} · Deoghar
+              {heroEyebrow}
             </p>
             <h1 className="font-serif text-4xl leading-tight text-white sm:text-5xl">
-              Your Trusted Property Partner in Deoghar
+              {heroHeading}
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-navy-100">
-              From your first site visit to final possession — guided with
-              transparency, local expertise and end-to-end accountability.
-            </p>
+            <p className="mt-5 max-w-xl text-lg text-navy-100">{heroSubtitle}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button href="/contact" size="lg">
-                Schedule Consultation
+              <Button href={heroCta1Href} size="lg">
+                {heroCta1Label}
               </Button>
-              <Button href="/ventures" variant="outlineLight" size="lg">
-                Explore Ventures
+              <Button href={heroCta2Href} variant="outlineLight" size="lg">
+                {heroCta2Label}
               </Button>
             </div>
             {/* Trust qualifiers (promises, not fabricated metrics) */}
@@ -254,6 +268,29 @@ export default async function HomePage() {
           )}
         </Container>
       </section>
+
+      {/* Featured Properties — only when listings are featured */}
+      {featuredListings.length > 0 && (
+        <section className="bg-muted py-16">
+          <Container>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <SectionHeading
+                eyebrow="Featured"
+                title="Properties in Deoghar"
+                subtitle="Hand-picked, title-verified listings ready for a site visit."
+              />
+              <Button href="/listings" variant="secondary">
+                View All Properties
+              </Button>
+            </div>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredListings.slice(0, 6).map((l) => (
+                <ListingCard key={l.id} listing={l} />
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* 5 · Customer Programs */}
       <section className="bg-navy-900 py-16">
