@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { site } from "@/lib/site";
 import { Analytics, GtmNoScript } from "@/components/analytics";
@@ -69,12 +68,6 @@ export default function RootLayout({
         <GtmNoScript />
         {children}
         <Analytics />
-        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-          <Script
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-            strategy="afterInteractive"
-          />
-        )}
       </body>
     </html>
   );

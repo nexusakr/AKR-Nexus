@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/admin/sidebar";
 import { SignOutButton } from "@/components/admin/sign-out-button";
+import { ToastProvider } from "@/components/admin/toast";
 import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default async function PanelLayout({
   const profile = await requireStaff();
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen bg-muted">
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col bg-navy-950 lg:flex">
@@ -55,5 +57,6 @@ export default async function PanelLayout({
         <main className="flex-1 p-5 lg:p-8">{children}</main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

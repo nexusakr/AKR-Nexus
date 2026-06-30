@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { submitLead, type LeadFormState } from "@/lib/actions/leads";
 import { enquiryTypes, interestTypes, type EnquiryType } from "@/lib/site";
+import { Turnstile } from "@/components/site/turnstile";
 import { cn } from "@/lib/utils";
 
 const initial: LeadFormState = { ok: false, message: "" };
@@ -40,6 +41,17 @@ export function LeadForm({
   className?: string;
 }) {
   const [state, formAction] = useActionState(submitLead, initial);
+  // Bump after each server response so the Turnstile widget mints a fresh,
+  // single-use token for retries.
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    setTurnstileReset((k) => k + 1);
+  }, [state]);
 
   if (state.ok) {
     return (
@@ -131,9 +143,9 @@ export function LeadForm({
       />
 
       {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-        <div
-          className="cf-turnstile"
-          data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+          resetKey={turnstileReset}
         />
       )}
 

@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, requireStaff } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import type { ListingType, PublishStatus } from "@/types/database";
+
+export type ListingActionResult = { ok: boolean; error?: string; id?: string };
 
 function num(v: FormDataEntryValue | null): number | null {
   if (v == null) return null;
@@ -20,14 +21,29 @@ function intOrNull(v: FormDataEntryValue | null): number | null {
   return n == null ? null : Math.trunc(n);
 }
 
-export async function saveListing(formData: FormData) {
+/** Turn a Supabase error into a friendly admin message. */
+function friendly(error: { code?: string; message: string }): string {
+  if (error.code === "23505") {
+    return "That slug is already used by another property. Please choose a different slug.";
+  }
+  return error.message || "Something went wrong. Please try again.";
+}
+
+function revalidateListings(id?: string) {
+  revalidatePath("/admin/listings");
+  if (id) revalidatePath(`/admin/listings/${id}`);
+  revalidatePath("/listings");
+  revalidatePath("/");
+}
+
+export async function saveListing(formData: FormData): Promise<ListingActionResult> {
   await requireStaff();
   const { userId } = await getCurrentUser();
   const supabase = await createClient();
 
   const id = String(formData.get("id") || "");
   const title = String(formData.get("title") || "").trim();
-  if (!title) return;
+  if (!title) return { ok: false, error: "Title is required." };
 
   // Amenities: checkbox values + comma-separated extras.
   const amenities = new Set<string>(
@@ -74,79 +90,94 @@ export async function saveListing(formData: FormData) {
     seo_description: String(formData.get("seo_description") || "").trim() || null,
   };
 
-  let listingId = id;
   if (id) {
-    await supabase.from("listings").update(payload).eq("id", id);
-  } else {
-    const { data } = await supabase
-      .from("listings")
-      .insert({ ...payload, created_by: userId })
-      .select("id")
-      .single();
-    listingId = data?.id ?? "";
+    const { error } = await supabase.from("listings").update(payload).eq("id", id);
+    if (error) return { ok: false, error: friendly(error) };
+    revalidateListings(id);
+    return { ok: true, id };
   }
 
-  revalidatePath("/admin/listings");
-  revalidatePath("/listings");
-  if (listingId) redirect(`/admin/listings/${listingId}`);
-  redirect("/admin/listings");
+  const { data, error } = await supabase
+    .from("listings")
+    .insert({ ...payload, created_by: userId })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: friendly(error) };
+  revalidateListings(data?.id);
+  return { ok: true, id: data?.id };
 }
 
-export async function toggleListingPublish(formData: FormData) {
+export async function toggleListingPublish(
+  id: string,
+  next: PublishStatus
+): Promise<ListingActionResult> {
   await requireStaff();
+  if (!id) return { ok: false, error: "Missing listing id." };
   const supabase = await createClient();
-  const id = String(formData.get("id") || "");
-  const next = String(formData.get("next") || "draft") as PublishStatus;
-  if (!id) return;
-  await supabase.from("listings").update({ status: next }).eq("id", id);
-  revalidatePath("/admin/listings");
-  revalidatePath("/listings");
+  const { error } = await supabase
+    .from("listings")
+    .update({ status: next })
+    .eq("id", id);
+  if (error) return { ok: false, error: friendly(error) };
+  revalidateListings(id);
+  return { ok: true };
 }
 
-export async function toggleListingFeatured(formData: FormData) {
+export async function toggleListingFeatured(
+  id: string,
+  next: boolean
+): Promise<ListingActionResult> {
   await requireStaff();
+  if (!id) return { ok: false, error: "Missing listing id." };
   const supabase = await createClient();
-  const id = String(formData.get("id") || "");
-  const next = String(formData.get("next") || "false") === "true";
-  if (!id) return;
-  await supabase.from("listings").update({ is_featured: next }).eq("id", id);
-  revalidatePath("/admin/listings");
-  revalidatePath("/listings");
-  revalidatePath("/");
+  const { error } = await supabase
+    .from("listings")
+    .update({ is_featured: next })
+    .eq("id", id);
+  if (error) return { ok: false, error: friendly(error) };
+  revalidateListings(id);
+  return { ok: true };
 }
 
-export async function deleteListing(formData: FormData) {
+export async function deleteListing(id: string): Promise<ListingActionResult> {
   await requireStaff();
+  if (!id) return { ok: false, error: "Missing listing id." };
   const supabase = await createClient();
-  const id = String(formData.get("id") || "");
-  if (!id) return;
-  await supabase.from("listings").delete().eq("id", id);
-  revalidatePath("/admin/listings");
-  revalidatePath("/listings");
+  const { error } = await supabase.from("listings").delete().eq("id", id);
+  if (error) return { ok: false, error: friendly(error) };
+  revalidateListings();
+  return { ok: true };
 }
 
-export async function addListingImage(formData: FormData) {
+export async function addListingImage(
+  listingId: string,
+  url: string,
+  caption?: string
+): Promise<ListingActionResult> {
   await requireStaff();
+  if (!listingId || !url) return { ok: false, error: "Missing image details." };
   const supabase = await createClient();
-  const listingId = String(formData.get("listing_id") || "");
-  const url = String(formData.get("image_url") || "").trim();
-  if (!listingId || !url) return;
-  await supabase.from("listing_images").insert({
+  const { error } = await supabase.from("listing_images").insert({
     listing_id: listingId,
     image_url: url,
-    caption: String(formData.get("caption") || "").trim() || null,
+    caption: caption?.trim() || null,
   });
+  if (error) return { ok: false, error: friendly(error) };
   revalidatePath(`/admin/listings/${listingId}`);
   revalidatePath("/listings");
+  return { ok: true };
 }
 
-export async function deleteListingImage(formData: FormData) {
+export async function deleteListingImage(
+  id: string,
+  listingId: string
+): Promise<ListingActionResult> {
   await requireStaff();
+  if (!id) return { ok: false, error: "Missing image id." };
   const supabase = await createClient();
-  const id = String(formData.get("id") || "");
-  const listingId = String(formData.get("listing_id") || "");
-  if (!id) return;
-  await supabase.from("listing_images").delete().eq("id", id);
+  const { error } = await supabase.from("listing_images").delete().eq("id", id);
+  if (error) return { ok: false, error: friendly(error) };
   revalidatePath(`/admin/listings/${listingId}`);
   revalidatePath("/listings");
+  return { ok: true };
 }

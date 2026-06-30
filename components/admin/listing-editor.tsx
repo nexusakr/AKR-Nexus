@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { saveListing } from "@/lib/actions/admin-listings";
+import { useToast } from "@/components/admin/toast";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { FileUpload } from "@/components/admin/file-upload";
 import { MultiImageField } from "@/components/admin/multi-image-field";
@@ -13,8 +14,7 @@ import type { Listing } from "@/types/database";
 const input =
   "w-full rounded-md border border-border px-3 py-2 text-sm focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200";
 
-function Save() {
-  const { pending } = useFormStatus();
+function Save({ pending }: { pending: boolean }) {
   return (
     <button
       disabled={pending}
@@ -43,9 +43,27 @@ function Field({
 export function ListingEditor({ listing }: { listing: Listing | null }) {
   const [slug, setSlug] = useState(listing?.slug || "");
   const selected = new Set(listing?.amenities || []);
+  const router = useRouter();
+  const toast = useToast();
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const res = await saveListing(fd);
+      if (res.ok) {
+        toast("success", listing?.id ? "Property updated." : "Property created.");
+        if (!listing?.id && res.id) router.push(`/admin/listings/${res.id}`);
+        else router.refresh();
+      } else {
+        toast("error", res.error || "Could not save property.");
+      }
+    });
+  }
 
   return (
-    <form action={saveListing} className="grid gap-6 lg:grid-cols-3">
+    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
       {listing?.id && <input type="hidden" name="id" value={listing.id} />}
 
       <div className="space-y-4 lg:col-span-2">
@@ -179,7 +197,7 @@ export function ListingEditor({ listing }: { listing: Listing | null }) {
           </Field>
           <MultiImageField name="floor_plans" bucket="listings" label="Floor plans" defaultUrls={listing?.floor_plans || []} />
           <FileUpload name="brochure_url" bucket="brochures" defaultUrl={listing?.brochure_url || ""} label="Brochure (PDF)" />
-          <Save />
+          <Save pending={isPending} />
         </div>
       </div>
     </form>
